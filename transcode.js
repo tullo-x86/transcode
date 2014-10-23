@@ -14,7 +14,8 @@
 
 var path = require('path'),
     fs = require('fs')
-    os = require('os');
+    os = require('os'),
+    exec = require('exec-sync');
 
 var ExitCode = {
   BadArgs: 63,
@@ -34,11 +35,36 @@ function printUsage() {
   console.log("eg: $(basename $0) -o 140 . ~/transcode")
 }
 
+function getMetadata(flacFile) {
+  var metadata = {};
+  var result = exec("metaflac --list --block-type=VORBIS_COMMENT \"" + flacFile + "\"");
+  
+  var metaRegex = /comment\[\d+\]\:\ ([^=]+)=(.+)$/gm
+  while ((match = metaRegex.exec( result )) != null) {
+    metadata[match[1]] = match[2];
+  }
+  return metadata;
+}
+
 function getOpusTranscoder(bitrate) {
   return function opusTranscode(encode) {
+    var meta = getMetadata(encode.source);
+    
     console.log("Transcoding " + encode.source);
-    console.log(" to         " + encode.destination + ".opus ");
-    console.log(" at " + bitrate + "kbps.\n");
+    var execCommand = "opusenc"
+      + " --quiet"
+      + " --bitrate " + bitrate
+      + " --title \"" + meta.TITLE + "\""
+      + " --artist \"" + meta.ARTIST + "\""
+      + " --album \"" + meta.ALBUM + "\""
+      + " --date \"" + meta.DATE + "\""
+      //+ " --genre \"" + meta.GENRE + "\""
+      + " --comment \"TRACKNUMBER=" + meta.TRACKNUMBER + "\""
+      
+      + " \"" + encode.source + "\""
+      + " \"" + encode.destination + ".opus\"";
+    console.log(execCommand);
+    exec(execCommand);
   }
 }
 
@@ -65,6 +91,7 @@ function transcodeDirectory(sourceRoot, targetRoot, transcode) {
   
   function recurseInto(dir) {
     pathStack.push(dir);
+    console.log("Recursing into " + dir);
     
     dirs.push(path.join(targetRoot, path.join.apply(path, pathStack.slice(1))));
     
@@ -104,10 +131,16 @@ console.dir(argv);
 console.log();
 
 var sourceDir = path.resolve(argv._[0]);
-if (!fs.statSync(sourceDir).isDirectory()) process.exit(ExitCode.BadArgs);
+if (!fs.statSync(sourceDir).isDirectory()) {
+  console.log("Cannot stat " + sourceDir);
+  process.exit(ExitCode.BadArgs);
+}
 	      
 var targetDir = path.resolve(argv._[1]);
-if (!fs.statSync(path.join(targetDir, '..')).isDirectory()) process.exit(ExitCode.BadArgs);
+if (!fs.statSync(path.join(targetDir, '..')).isDirectory()) {
+  console.log("Cannot stat " + targetDir);
+  process.exit(ExitCode.BadArgs);
+}
     
 var opusBitrate = (+argv.opus >= 6 && +argv.opus) || (+argv.o >= 6 && +argv.o);
 if (opusBitrate)
