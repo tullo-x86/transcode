@@ -75,10 +75,20 @@ fi
 
 cd $library_root
 
-flac_files=$(find -L . -type f -name "*.flac")
+flac_files=$(find -L "${c_target_root}" -type f -name "*.flac")
+
+echo "$flac_files" > flacfiles.txt
+
 relative_paths=$( echo "$flac_files" | sed "s/\.\/\(.*\)\.flac/\1/g" )
 
+echo "$relative_paths" > relativepaths.txt
 
+exit 0
+#badbad
+# Create directory paths
+find "${c_target_root}" -type d -exec mkdir -p "${dest_root}/{}" \;
+
+# Transcode files
 export library_root
 export c_dest_root
 transcode_file() {
