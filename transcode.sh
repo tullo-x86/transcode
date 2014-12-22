@@ -39,32 +39,32 @@ fail_args() {
 
 if [ $# -eq 3 ]
   then
-    library_root=`pwd`
+    libsrc_root=`pwd`
     target_root=${1%/}
-    dest_root=${2%/}
+    libdst_root=${2%/}
     quality=$3
 elif [ $# -eq 4 ]
   then
-    library_root=${1%/}
+    libsrc_root=${1%/}
     target_root=${2%/}
-    dest_root=${3%/}
+    libdst_root=${3%/}
     quality=$4
 else
   fail_args
 fi
 
-if [ ! -d "${library_root}" ] || [ ! -d "${target_root}" ] || [ ! -d "${dest_root}" ]
+if [ ! -d "${libsrc_root}" ] || [ ! -d "${target_root}" ] || [ ! -d "${libdst_root}" ]
   then fail_args
 fi
 
-c_library_root=$( cd "${library_root}" ; pwd -P )
-echo "Canonical library root is ${c_library_root}"
+c_libsrc_root=$( cd "${libsrc_root}" ; pwd -P )
+echo "Canonical library root is ${c_libsrc_root}"
 c_target_root=$( cd "${target_root}" ; pwd -P )
 echo "Canonical target root is ${c_target_root}"
-c_dest_root=$( cd "${dest_root}" ; pwd -P )
-echo "Canonical destination root is ${c_dest_root}"
+c_libdst_root=$( cd "${libdst_root}" ; pwd -P )
+echo "Canonical destination root is ${c_libdst_root}"
 
-if [[ $c_target_root != "${c_library_root}"* ]]
+if [[ $c_target_root != "${c_libsrc_root}"* ]]
   then
     echo "*** Library root not in target ancestry"
     exit $E_BADPATH
@@ -73,7 +73,7 @@ else
     echo
 fi
 
-cd $library_root
+cd $libsrc_root
 
 flac_files=$(find -L "${c_target_root}" -type f -name "*.flac")
 
@@ -86,15 +86,15 @@ echo "$relative_paths" > relativepaths.txt
 exit 0
 #badbad
 # Create directory paths
-find "${c_target_root}" -type d -exec mkdir -p "${dest_root}/{}" \;
+find "${c_target_root}" -type d -exec mkdir -p "${libdst_root}/{}" \;
 
 # Transcode files
-export library_root
-export c_dest_root
+export libsrc_root
+export c_libdst_root
 transcode_file() {
   #echo $PWD
-  #echo "flac -cds  ./$1.flac  | opusenc --quiet --bitrate $2 -  $c_dest_root/$1.opus"
-         flac -cds "./$1.flac" | opusenc --quiet --bitrate $2 - "$c_dest_root/$1.opus"
+  #echo "flac -cds  ./$1.flac  | opusenc --quiet --bitrate $2 -  $c_libdst_root/$1.opus"
+         flac -cds "./$1.flac" | opusenc --quiet --bitrate $2 - "$c_libdst_root/$1.opus"
 }
 export -f transcode_file
 
