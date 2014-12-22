@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# transcode.sh
+# Pocket Transcoder
 #
 # Transcodes FLAC to Opus in parallel
 
@@ -17,7 +17,7 @@ then
 fi
 
 print_usage() {
-  echo "$(basename $0) transcodes a directory structure of FLAC files to Opus files, keeping tags and structure"
+  echo "\`$(basename $0)\` transcodes a directory structure of FLAC files to Opus files, keeping tags and structure"
   echo
   echo "Usage: $(basename $0) [library/root] filter ~/dest/dir bitrate"
   echo
@@ -40,13 +40,13 @@ fail_args() {
 if [ $# -eq 3 ]
   then
     libsrc_root=`pwd`
-    filter=${1%/}
+    filter=$1
     libdst_root=${2%/}
     quality=$3
 elif [ $# -eq 4 ]
   then
     libsrc_root=${1%/}
-    filter=${2%/}
+    filter=$2
     libdst_root=${3%/}
     quality=$4
 else
