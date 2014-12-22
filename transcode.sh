@@ -19,13 +19,13 @@ fi
 print_usage() {
   echo "$(basename $0) transcodes a directory structure of FLAC files to Opus files, keeping tags and structure"
   echo
-  echo "Usage: $(basename $0) [library/root] source/dir ~/dest/dir bitrate"
+  echo "Usage: $(basename $0) [library/root] filter ~/dest/dir bitrate"
   echo
-  echo "Library root is the root of your music library (transcoded dir structure will mirror relative paths from here)"
-  echo "Source dir will be recursed over, looking for FLAC files to transcode"
+  echo "Library root is the root of your music library (transcoded dir structure will mirror relative paths from here). It will be recursed over, looking for FLAC files to transcode"
+  echo "Filter will be passed to \`find\` as a DIRECTORY path filter, and .FLAC files in matched directories will be transcoded."
   echo "Dest dir is where transcoded music will be placed"
   echo
-  echo "Example: $(basename $0) ~/Music ~/Music/Haken/Visions ~/temp/transcode 140"
+  echo "Example: $(basename $0) ~/Music Visions ~/temp/transcode 140"
   echo
   echo "         In this case, '~/Music/Haken/Visions/02 Nocturnal Conspiracy.flac'"
   echo "         will be transcoded to '~/temp/transcode/Haken/Visions/02 Nocturnal Conspiracy.opus'"
@@ -40,53 +40,35 @@ fail_args() {
 if [ $# -eq 3 ]
   then
     libsrc_root=`pwd`
-    target_root=${1%/}
+    filter=${1%/}
     libdst_root=${2%/}
     quality=$3
 elif [ $# -eq 4 ]
   then
     libsrc_root=${1%/}
-    target_root=${2%/}
+    filter=${2%/}
     libdst_root=${3%/}
     quality=$4
 else
   fail_args
 fi
 
-if [ ! -d "${libsrc_root}" ] || [ ! -d "${target_root}" ] || [ ! -d "${libdst_root}" ]
+if [ ! -d "${libsrc_root}" ] || [ ! -d "${libdst_root}" ]
   then fail_args
 fi
 
 c_libsrc_root=$( cd "${libsrc_root}" ; pwd -P )
 echo "Canonical library root is ${c_libsrc_root}"
-c_target_root=$( cd "${target_root}" ; pwd -P )
-echo "Canonical target root is ${c_target_root}"
 c_libdst_root=$( cd "${libdst_root}" ; pwd -P )
 echo "Canonical destination root is ${c_libdst_root}"
 
-if [[ $c_target_root != "${c_libsrc_root}"* ]]
-  then
-    echo "*** Library root not in target ancestry"
-    exit $E_BADPATH
-else
-    echo "+++ Library root ancestry confirmed"
-    echo
-fi
-
 cd $libsrc_root
 
-flac_files=$(find -L "${c_target_root}" -type f -name "*.flac")
-
-echo "$flac_files" > flacfiles.txt
-
+flac_files=$(find -L . -type f -path "*${filter}*/*" -name "*.flac")
 relative_paths=$( echo "$flac_files" | sed "s/\.\/\(.*\)\.flac/\1/g" )
 
-echo "$relative_paths" > relativepaths.txt
-
-exit 0
-#badbad
 # Create directory paths
-find "${c_target_root}" -type d -exec mkdir -p "${libdst_root}/{}" \;
+find -L . -type d -path "*${filter}*" -exec mkdir -p "${c_libdst_root}/{}" \;
 
 # Transcode files
 export libsrc_root
