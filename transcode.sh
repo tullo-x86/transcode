@@ -15,7 +15,7 @@ E_MISSINGPROGRAM=64
 
 CPU_CORES=4
 
-if [ ! -e /usr/bin/flac ] || [ ! -e /usr/bin/opusenc ]
+if [ ! -e /usr/bin/flac ] || [ ! -e /usr/bin/fdkaac ]
 then
     echo "You need fdkaac-encoder and flac installed"
     exit $E_MISSING_PROGRAM
