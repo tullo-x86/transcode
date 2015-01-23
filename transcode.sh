@@ -19,8 +19,6 @@
 # }
 
 
-# TODO: Copy image files
-# TODO: Copy files which are already compressed in a lossy format
 # TODO: Test case-sensitivity of file extension
 
 E_BADPATH=62
