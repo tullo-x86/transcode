@@ -27,8 +27,6 @@ E_BADPATH=62
 E_BADARGS=63
 E_MISSINGPROGRAM=64
 
-CPU_CORES=4
-
 if [ ! -e `which ffmpeg` ]
 then
     echo "You need ffmpeg installed."
@@ -84,11 +82,16 @@ c_libdst_root=$( cd "${libdst_root}" ; pwd -P )
 cd "$libsrc_root"
 
 flac_files=$(find -L . -type f -path "*${filter}*/*" -name "*.flac")
-relative_paths=$( echo "$flac_files" | sed "s/\.\/\(.*\)\.flac/\1/g" )
+flac_relative_paths=$( echo "$flac_files" | sed "s/\.\/\(.*\)\.flac/\1/g" )
+
+other_files=$(find -L . -type f -path "*${filter}*/*" \( -name "*.jpg" -o -name "*.png" -o -name "*.mp3" -o -name "*.mp4" -o -name "*.m4a" -o -name "*.ogg" -o -name "*.oga" \) )
+other_relative_paths=$( echo "$other_files" | sed "s/\.\/\(.*\)/\1/g" )
 
 echo    "+--------------->"
 echo -n "| Files to transcode: "
 echo "${flac_files}" | wc -l
+echo -n "| Files to copy: "
+echo "${other_files}" | wc -l
 echo    "+-------------------------->"
 
 # Create directory paths
@@ -97,19 +100,33 @@ find -L . -type d -path "*${filter}*" -exec mkdir -p "${c_libdst_root}/{}" \;
 
 
 # Transcode files
-export libsrc_root
 export c_libdst_root
 transcode_file() {
-  #TODO: read tags
-  #flac -cds "./$1.flac" | fdkaac -SI --profile 2 --bitrate-mode 5 --gapless-mode 2 -o "$c_libdst_root/$1.m4a" -
+  echo -e "\r $1"
   ffmpeg -y -loglevel error -i "./$1.flac" -vn -c:a libfdk_aac -vbr 4 "$c_libdst_root/$1.m4a"
 }
 export -f transcode_file
 
-parallel -u -P $CPU_CORES --eta "transcode_file {}" ::: "$relative_paths"
+# It's a good idea to let GNU Parallel use all the visible "cores", even if the
+# CPU is presenting extra cores because of hyperthreading. Don't set the core
+# count manually.
+echo
+echo "Transcoding..."
+parallel -u --eta "transcode_file {}" ::: "$flac_relative_paths"
 
 echo
-echo "end of line."
+echo
+echo "Copying additional files (JPG, PNG, MP3, MP4, M4A, OGG, OGA)..."
+# Yes, we're going to poop on $IFS here. If something needs to happen after here, we should reset $IFS.
+IFS=$'\n'
+for other in $other_relative_paths; do
+  cp -v "./$other" "$c_libdst_root/$other"
+done
+
+# This is the machine that goes "bing"!
+tput bel
+echo
+echo "Transcoding complete."
 
 
 
