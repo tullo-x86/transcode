@@ -114,6 +114,13 @@ echo
 echo "Transcoding..."
 parallel -u --eta "transcode_file {}" ::: "$flac_relative_paths"
 
+if [ $? -ne 0 ]
+  then
+    echo
+    echo "Transcoding cancelled."
+    exit 130
+fi
+
 echo
 echo
 echo "Copying additional files (JPG, PNG, MP3, MP4, M4A, OGG, OGA)..."
