@@ -32,7 +32,7 @@ then
 fi
 
 print_usage() {
-  echo "\`$(basename $0)\` transcodes a directory structure of FLAC files to M4A-encapsulated AAC files, keeping tags and structure"
+  echo "\`$(basename $0)\` transcodes a directory structure of FLAC files to Opus files, preserving tags and structure"
   echo
   echo "Usage: $(basename $0) [library/root] filter ~/dest/dir"
   echo
@@ -99,9 +99,10 @@ find -L . -type d -path "*${filter}*" -exec mkdir -p "${c_libdst_root}/{}" \;
 
 # Transcode files
 export c_libdst_root
+
 transcode_file() {
   echo -e "\r $1"
-  ffmpeg -y -loglevel error -i "./$1.flac" -vn -c:a libfdk_aac -vbr 4 "$c_libdst_root/$1.m4a"
+  ffmpeg -y -loglevel error -i "./$1.flac" -vn -c:a libopus -b:a 144k -vbr on "$c_libdst_root/$1.opus"
 }
 export -f transcode_file
 
